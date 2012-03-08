@@ -256,6 +256,12 @@ class Server {
 		else {
 			// we are the child
 			while(true) {
+				
+				//if the client is broken, exit the child process
+                                if($client->exists==false){
+                                    break;
+                                }				
+				
 				// push something to the client
 				$seconds = rand(2, 5);
 				$this->send($client, "I am waiting {$seconds} seconds");
@@ -273,6 +279,7 @@ class Server {
 		$this->console("Send '".$text."' to client #{$client->getId()}");
 		$text = $this->encode($text);
 		if(socket_write($client->getSocket(), $text, strlen($text)) === false) {
+                        $client->exists=false; //flag the client as broken			
 			$this->console("Unable to write to client #{$client->getId()}'s socket");
 			$this->disconnect($client);
 		}
