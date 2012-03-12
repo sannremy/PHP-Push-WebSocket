@@ -221,7 +221,14 @@ class Server {
 					$client = $this->getClientBySocket($socket);
 					if($client) {
 						$this->console("Receiving data from the client");
-						$bytes = @socket_recv($socket, $data, 2048, MSG_DONTWAIT);
+						
+						$data=null; 
+						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)){
+						
+							$data.=$r_data;
+							
+						}
+						
 						if(!$client->getHandshake()) {
 							$this->console("Doing the handshake");
 							if($this->handshake($client, $data))
