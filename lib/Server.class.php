@@ -221,7 +221,14 @@ class Server {
 					$client = $this->getClientBySocket($socket);
 					if($client) {
 						$this->console("Receiving data from the client");
-						$bytes = @socket_recv($socket, $data, 2048, MSG_DONTWAIT);
+						
+						$data=null; 
+						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)){
+						
+							$data.=$r_data;
+							
+						}
+						
 						if(!$client->getHandshake()) {
 							$this->console("Doing the handshake");
 							if($this->handshake($client, $data))
@@ -256,6 +263,12 @@ class Server {
 		else {
 			// we are the child
 			while(true) {
+				
+				//if the client is broken, exit the child process
+                                if($client->exists==false){
+                                    break;
+                                }				
+				
 				// push something to the client
 				$seconds = rand(2, 5);
 				$this->send($client, "I am waiting {$seconds} seconds");
@@ -273,6 +286,7 @@ class Server {
 		$this->console("Send '".$text."' to client #{$client->getId()}");
 		$text = $this->encode($text);
 		if(socket_write($client->getSocket(), $text, strlen($text)) === false) {
+                        $client->exists=false; //flag the client as broken			
 			$this->console("Unable to write to client #{$client->getId()}'s socket");
 			$this->disconnect($client);
 		}
@@ -281,22 +295,80 @@ class Server {
 	/**
 	 * Encode a text for sending to clients via ws://
 	 * @param $text
+	 * @param $messageType
 	 */
-	private function encode($text)
-	{
-		// 0x1 text frame (FIN + opcode)
-		$b1 = 0x80 | (0x1 & 0x0f);
-		$length = strlen($text);
+	function encode($message, $messageType='text') {
 		
-		if($length <= 125)
-			$header = pack('CC', $b1, $length);
-		elseif($length > 125 && $length < 65536)
-			$header = pack('CCS', $b1, 126, $length);
-		elseif($length >= 65536)
-			$header = pack('CCN', $b1, 127, $length);
+		switch ($messageType) {
+			case 'continuous':
+				$b1 = 0;
+				break;
+			case 'text':
+				$b1 = 1;
+				break;
+			case 'binary':
+				$b1 = 2;
+				break;
+			case 'close':
+				$b1 = 8;
+				break;
+			case 'ping':
+				$b1 = 9;
+				break;
+			case 'pong':
+				$b1 = 10;
+				break;
+		}
+
+			$b1 += 128;
+
+
+		$length = strlen($message);
+		$lengthField = "";
 		
-		return $header.$text;
+		if ($length < 126) {
+			$b2 = $length;
+		} elseif ($length <= 65536) {
+			$b2 = 126;
+			$hexLength = dechex($length);
+			//$this->stdout("Hex Length: $hexLength");
+			if (strlen($hexLength)%2 == 1) {
+				$hexLength = '0' . $hexLength;
+			} 
+			
+			$n = strlen($hexLength) - 2;
+
+			for ($i = $n; $i >= 0; $i=$i-2) {
+				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
+			}
+			
+			while (strlen($lengthField) < 2) {
+				$lengthField = chr(0) . $lengthField;
+			}
+			
+		} else {
+			
+			$b2 = 127;
+			$hexLength = dechex($length);
+			
+			if (strlen($hexLength)%2 == 1) {
+				$hexLength = '0' . $hexLength;
+			} 
+			
+			$n = strlen($hexLength) - 2;
+
+			for ($i = $n; $i >= 0; $i=$i-2) {
+				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
+			}
+			
+			while (strlen($lengthField) < 8) {
+				$lengthField = chr(0) . $lengthField;
+			}
+		}
+
+		return chr($b1) . chr($b2) . $lengthField . $message;
 	}
+
 
 	/**
 	 * Unmask a received payload
