@@ -21,6 +21,7 @@ class Client {
 	private $socket;
 	private $handshake;
 	private $pid;
+        public $exists=true; //to check if client is broken	
 	
 	function Client($id, $socket) {
 		$this->id = $id;
