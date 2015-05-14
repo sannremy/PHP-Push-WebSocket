@@ -15,43 +15,43 @@
  * @version 0.1
  */
 class Server {
-	
+
 	/**
 	 * The address of the server
 	 * @var String
 	 */
 	private $address;
-	
+
 	/**
 	 * The port for the master socket
 	 * @var int
 	 */
 	private $port;
-	
+
 	/**
 	 * The master socket
 	 * @var Resource
 	 */
 	private $master;
-	
+
 	/**
 	 * The array of sockets (1 socket = 1 client)
 	 * @var Array of resource
 	 */
 	private $sockets;
-	
+
 	/**
 	 * The array of connected clients
 	 * @var Array of clients
 	 */
 	private $clients;
-	
+
 	/**
 	 * If true, the server will print messages to the terminal
 	 * @var Boolean
 	 */
 	private $verboseMode;
-	
+
 	/**
 	 * Server constructor
 	 * @param $address The address IP or hostname of the server (default: 127.0.0.1).
@@ -110,7 +110,7 @@ class Server {
 			$this->console("The client doesn't support WebSocket");
 			return false;
 		}
-		
+
 		$this->console("Client WebSocket version is {$version}, (required: 13)");
 		if($version == 13) {
 			// Extract header variables
@@ -123,13 +123,13 @@ class Server {
 				$origin = $match[1];
 			if(preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $headers, $match))
 				$key = $match[1];
-			
+
 			$this->console("Client headers are:");
 			$this->console("\t- Root: ".$root);
 			$this->console("\t- Host: ".$host);
 			$this->console("\t- Origin: ".$origin);
 			$this->console("\t- Sec-WebSocket-Key: ".$key);
-			
+
 			$this->console("Generating Sec-WebSocket-Accept key...");
 			$acceptKey = $key.'258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 			$acceptKey = base64_encode(sha1($acceptKey, true));
@@ -139,7 +139,7 @@ class Server {
 					   "Connection: Upgrade\r\n".
 					   "Sec-WebSocket-Accept: $acceptKey".
 					   "\r\n\r\n";
-			
+
 			$this->console("Sending this response to the client #{$client->getId()}:\r\n".$upgrade);
 			socket_write($client->getSocket(), $upgrade);
 			$client->setHandshake(true);
@@ -158,19 +158,21 @@ class Server {
 	 */
 	private function disconnect($client) {
 		$this->console("Disconnecting client #{$client->getId()}");
-		
+
 		$client->setIsConnected(false);
 
 		$i = array_search($client, $this->clients);
 		$j = array_search($client->getSocket(), $this->sockets);
-		
+
 		if($j >= 0) {
-			array_splice($this->sockets, $j, 1);
-			socket_shutdown($client->getSocket(), 2);
-			socket_close($client->getSocket());
-			$this->console("Socket closed");
+			if($client->getSocket()) {
+				array_splice($this->sockets, $j, 1);
+				socket_shutdown($client->getSocket(), 2);
+				socket_close($client->getSocket());
+				$this->console("Socket closed");
+			}
 		}
-		
+
 		if($i >= 0) {
 			array_splice($this->clients, $i, 1);
 		}
@@ -191,7 +193,7 @@ class Server {
 			}
 		return false;
 	}
-	
+
 	/**
 	 * Do an action
 	 * @param $client
@@ -206,7 +208,7 @@ class Server {
 			$this->console("Process {$client->getPid()} is killed!");
 		}
 	}
-	
+
 	/**
 	 * Run the server
 	 */
@@ -229,13 +231,13 @@ class Server {
 					$client = $this->getClientBySocket($socket);
 					if($client) {
 						$this->console("Receiving data from the client");
-						
-						$data = null; 
+
+						$data = null;
 
 						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)) {
 							$data .= $r_data;
 						}
-						
+
 						if(!$client->getHandshake()) {
 							$this->console("Doing the handshake");
 							if($this->handshake($client, $data)) {
@@ -257,7 +259,7 @@ class Server {
 			}
 		}
 	}
-	
+
 	/**
 	 * Start a child process for pushing data
 	 * @param unknown_type $client
@@ -308,7 +310,7 @@ class Server {
 	 * @param $messageType
 	 */
 	function encode($message, $messageType='text') {
-		
+
 		switch ($messageType) {
 			case 'continuous':
 				$b1 = 0;
@@ -335,7 +337,7 @@ class Server {
 
 		$length = strlen($message);
 		$lengthField = "";
-		
+
 		if($length < 126) {
 			$b2 = $length;
 		} elseif($length <= 65536) {
@@ -344,33 +346,33 @@ class Server {
 			//$this->stdout("Hex Length: $hexLength");
 			if(strlen($hexLength)%2 == 1) {
 				$hexLength = '0' . $hexLength;
-			} 
-			
+			}
+
 			$n = strlen($hexLength) - 2;
 
 			for($i = $n; $i >= 0; $i=$i-2) {
 				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
 			}
-			
+
 			while(strlen($lengthField) < 2) {
 				$lengthField = chr(0) . $lengthField;
 			}
-			
+
 		} else {
-			
+
 			$b2 = 127;
 			$hexLength = dechex($length);
-			
+
 			if(strlen($hexLength) % 2 == 1) {
 				$hexLength = '0' . $hexLength;
-			} 
-			
+			}
+
 			$n = strlen($hexLength) - 2;
 
 			for($i = $n; $i >= 0; $i = $i - 2) {
 				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
 			}
-			
+
 			while(strlen($lengthField) < 8) {
 				$lengthField = chr(0) . $lengthField;
 			}
@@ -406,11 +408,11 @@ class Server {
 		}
 		return $text;
 	}
-	
+
 	/**
 	 * Print a text to the terminal
 	 * @param $text the text to display
-	 * @param $exit if true, the process will exit 
+	 * @param $exit if true, the process will exit
 	 */
 	private function console($text, $exit = false) {
 		$text = date('[Y-m-d H:i:s] ').$text."\r\n";
