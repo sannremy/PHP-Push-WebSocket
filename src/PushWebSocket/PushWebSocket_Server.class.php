@@ -14,6 +14,9 @@
  * 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * @version 0.1
  */
+
+namespace PushWebSocket;
+
 class Server {
 
 	/**
@@ -57,7 +60,7 @@ class Server {
 	 * @param $address The address IP or hostname of the server (default: 127.0.0.1).
 	 * @param $port The port for the master socket (default: 5001)
 	 */
-	function Server($address = '127.0.0.1', $port = 5001, $verboseMode = false) {
+	public function __construct($address = '127.0.0.1', $port = 5001, $verboseMode = false) {
 		$this->console("Server starting...");
 		$this->address = $address;
 		$this->port = $port;
@@ -90,7 +93,7 @@ class Server {
 	 */
 	private function connect($socket) {
 		$this->console("Creating client...");
-		$client = new Client(uniqid(), $socket);
+		$client = new \PushWebSocket\Client(uniqid(), $socket);
 		$this->clients[] = $client;
 		$this->sockets[] = $socket;
 		$this->console("Client #{$client->getId()} is successfully created!");
@@ -216,43 +219,46 @@ class Server {
 		$this->console("Start running...");
 		while(true) {
 			$changed_sockets = $this->sockets;
-			@socket_select($changed_sockets, $write = NULL, $except = NULL, 1);
-			foreach($changed_sockets as $socket) {
-				if($socket == $this->master) {
-					if(($acceptedSocket = socket_accept($this->master)) < 0) {
-						$this->console("Socket error: ".socket_strerror(socket_last_error($acceptedSocket)));
-					}
-					else {
-						$this->connect($acceptedSocket);
-					}
-				}
-				else {
-					$this->console("Finding the socket that associated to the client...");
-					$client = $this->getClientBySocket($socket);
-					if($client) {
-						$this->console("Receiving data from the client");
 
-						$data = null;
-
-						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)) {
-							$data .= $r_data;
-						}
-
-						if(!$client->getHandshake()) {
-							$this->console("Doing the handshake");
-							if($this->handshake($client, $data)) {
-								$this->startProcess($client);
-							}
-							else {
-								$this->disconnect($client);
-							}
-						}
-						elseif($bytes === 0) {
-							$this->disconnect($client);
+			if($changed_sockets) {
+				@socket_select($changed_sockets, $write = NULL, $except = NULL, 1);
+				foreach($changed_sockets as $socket) {
+					if($socket == $this->master) {
+						if(($acceptedSocket = socket_accept($this->master)) < 0) {
+							$this->console("Socket error: ".socket_strerror(socket_last_error($acceptedSocket)));
 						}
 						else {
-							// When received data from client
-							$this->action($client, $data);
+							$this->connect($acceptedSocket);
+						}
+					}
+					else {
+						$this->console("Finding the socket that associated to the client...");
+						$client = $this->getClientBySocket($socket);
+						if($client) {
+							$this->console("Receiving data from the client");
+
+							$data = null;
+
+							while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)) {
+								$data .= $r_data;
+							}
+
+							if(!$client->getHandshake()) {
+								$this->console("Doing the handshake");
+								if($this->handshake($client, $data)) {
+									$this->startProcess($client);
+								}
+								else {
+									$this->disconnect($client);
+								}
+							}
+							elseif($bytes === 0) {
+								$this->disconnect($client);
+							}
+							else {
+								// When received data from client
+								$this->action($client, $data);
+							}
 						}
 					}
 				}

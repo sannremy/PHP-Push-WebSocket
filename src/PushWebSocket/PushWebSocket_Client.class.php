@@ -14,6 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * @version 0.1
  */
+
+namespace PushWebSocket;
+
 class Client {
 	private $id;
 	private $socket;
@@ -21,7 +24,7 @@ class Client {
 	private $pid;
 	private $isConnected;
 
-	function Client($id, $socket) {
+	public function __construct($id, $socket) {
 		$this->id = $id;
 		$this->socket = $socket;
 		$this->handshake = false;
