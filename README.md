@@ -1,8 +1,25 @@
+PHP Push WebSocket
+==============
 
+PHP Push WebSocket is an implementation of the WebSocket protocol following the specification of [RFC 6455](https://tools.ietf.org/html/rfc6455). It also includes a client side for examples.
 
-Run the server instance: php -q ppws_server.php
-Open front.html in Google Chrome Web-browser (at least version 16)
+Usage
+-----
 
+ 1. run a server instance: `php websocket_server.php`.
+ 2. Open websocket_client.html in a browser over HTTP protocol.
 
+Examples of use cases
+--------
 
-http://srchea.com/build-a-real-time-application-using-html5-websockets
+ * Instant messenger
+ * Push app notifications
+ * Shared applications like presentation (slides), collaborative text editors
+ * Data monitoring, and much more
+
+Bottom line
+---
+
+Here is a blog post about this implementation: [http://srchea.com/build-a-real-time-application-using-html5-websockets](http://srchea.com/build-a-real-time-application-using-html5-websockets)
+
+Feel free to contribute! :-)

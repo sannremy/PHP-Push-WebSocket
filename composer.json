@@ -1,0 +1,21 @@
+{
+    "name": "srchea/php-push-web-socket",
+    "description": "Lightweight PHP WebSocket server handling several clients.",
+    "type": "library",
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "Sann-Remy Chea",
+            "email": "src@srchea.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.3.0"
+        },
+    "autoload": {
+        "psr-4": {
+            "PushWebSocket\\": "src/PushWebSocket/"
+        }
+    }
+}
