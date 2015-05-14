@@ -232,7 +232,12 @@ class Server {
 						if(!$client->getHandshake()) {
 							$this->console("Doing the handshake");
 							if($this->handshake($client, $data))
+							{
 								$this->startProcess($client);
+							}
+							else{
+								$this->disconnect($client);
+							}
 						}
 						elseif($bytes === 0) {
 							$this->disconnect($client);
