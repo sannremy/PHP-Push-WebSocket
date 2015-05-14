@@ -3,17 +3,15 @@
  * Simple server class which manage WebSocket protocols
  * @author Sann-Remy Chea <http://srchea.com>
  * @license This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 	it under the terms of the GNU General Public License as published by
+ * 	the Free Software Foundation, either version 3 of the License, or
+ * 	(at your option) any later version.
+ * 	This program is distributed in the hope that it will be useful,
+ * 	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * 	GNU General Public License for more details.
+ * 	You should have received a copy of the GNU General Public License
+ * 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * @version 0.1
  */
 class Server {
@@ -69,14 +67,18 @@ class Server {
 		$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 		socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
 
-		if (!is_resource($socket))
+		if(!is_resource($socket)) {
 			$this->console("socket_create() failed: ".socket_strerror(socket_last_error()), true);
+		}
 
-		if (!socket_bind($socket, $this->address, $this->port))
+		if(!socket_bind($socket, $this->address, $this->port)) {
 			$this->console("socket_bind() failed: ".socket_strerror(socket_last_error()), true);
+		}
 
-		if(!socket_listen($socket, 20))
+		if(!socket_listen($socket, 20)) {
 			$this->console("socket_listen() failed: ".socket_strerror(socket_last_error()), true);
+		}
+
 		$this->master = $socket;
 		$this->sockets = array($socket);
 		$this->console("Server started on {$this->address}:{$this->port}");
@@ -101,8 +103,9 @@ class Server {
 	 */
 	private function handshake($client, $headers) {
 		$this->console("Getting client WebSocket version...");
-		if(preg_match("/Sec-WebSocket-Version: (.*)\r\n/", $headers, $match))
+		if(preg_match("/Sec-WebSocket-Version: (.*)\r\n/", $headers, $match)) {
 			$version = $match[1];
+		}
 		else {
 			$this->console("The client doesn't support WebSocket");
 			return false;
@@ -155,6 +158,9 @@ class Server {
 	 */
 	private function disconnect($client) {
 		$this->console("Disconnecting client #{$client->getId()}");
+		
+		$client->setIsConnected(false);
+
 		$i = array_search($client, $this->clients);
 		$j = array_search($client->getSocket(), $this->sockets);
 		
@@ -165,8 +171,10 @@ class Server {
 			$this->console("Socket closed");
 		}
 		
-		if($i >= 0)
+		if($i >= 0) {
 			array_splice($this->clients, $i, 1);
+		}
+
 		$this->console("Client #{$client->getId()} disconnected");
 	}
 
@@ -222,20 +230,18 @@ class Server {
 					if($client) {
 						$this->console("Receiving data from the client");
 						
-						$data=null; 
-						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)){
-						
-							$data.=$r_data;
-							
+						$data = null; 
+
+						while($bytes = @socket_recv($socket, $r_data, 2048, MSG_DONTWAIT)) {
+							$data .= $r_data;
 						}
 						
 						if(!$client->getHandshake()) {
 							$this->console("Doing the handshake");
-							if($this->handshake($client, $data))
-							{
+							if($this->handshake($client, $data)) {
 								$this->startProcess($client);
 							}
-							else{
+							else {
 								$this->disconnect($client);
 							}
 						}
@@ -268,12 +274,12 @@ class Server {
 		else {
 			// we are the child
 			while(true) {
-				
-				//if the client is broken, exit the child process
-                                if($client->exists==false){
-                                    break;
-                                }				
-				
+
+				// check if the client is connected
+				if(!$client->isConnected()){
+					break;
+				}
+
 				// push something to the client
 				$seconds = rand(2, 5);
 				$this->send($client, "I am waiting {$seconds} seconds");
@@ -291,7 +297,6 @@ class Server {
 		$this->console("Send '".$text."' to client #{$client->getId()}");
 		$text = $this->encode($text);
 		if(socket_write($client->getSocket(), $text, strlen($text)) === false) {
-                        $client->exists=false; //flag the client as broken			
 			$this->console("Unable to write to client #{$client->getId()}'s socket");
 			$this->disconnect($client);
 		}
@@ -331,23 +336,23 @@ class Server {
 		$length = strlen($message);
 		$lengthField = "";
 		
-		if ($length < 126) {
+		if($length < 126) {
 			$b2 = $length;
-		} elseif ($length <= 65536) {
+		} elseif($length <= 65536) {
 			$b2 = 126;
 			$hexLength = dechex($length);
 			//$this->stdout("Hex Length: $hexLength");
-			if (strlen($hexLength)%2 == 1) {
+			if(strlen($hexLength)%2 == 1) {
 				$hexLength = '0' . $hexLength;
 			} 
 			
 			$n = strlen($hexLength) - 2;
 
-			for ($i = $n; $i >= 0; $i=$i-2) {
+			for($i = $n; $i >= 0; $i=$i-2) {
 				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
 			}
 			
-			while (strlen($lengthField) < 2) {
+			while(strlen($lengthField) < 2) {
 				$lengthField = chr(0) . $lengthField;
 			}
 			
@@ -356,17 +361,17 @@ class Server {
 			$b2 = 127;
 			$hexLength = dechex($length);
 			
-			if (strlen($hexLength)%2 == 1) {
+			if(strlen($hexLength) % 2 == 1) {
 				$hexLength = '0' . $hexLength;
 			} 
 			
 			$n = strlen($hexLength) - 2;
 
-			for ($i = $n; $i >= 0; $i=$i-2) {
+			for($i = $n; $i >= 0; $i = $i - 2) {
 				$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
 			}
 			
-			while (strlen($lengthField) < 8) {
+			while(strlen($lengthField) < 8) {
 				$lengthField = chr(0) . $lengthField;
 			}
 		}
@@ -396,7 +401,7 @@ class Server {
 		}
 
 		$text = '';
-		for ($i = 0; $i < strlen($data); ++$i) {
+		for($i = 0; $i < strlen($data); ++$i) {
 			$text .= $data[$i] ^ $masks[$i%4];
 		}
 		return $text;
@@ -409,10 +414,13 @@ class Server {
 	 */
 	private function console($text, $exit = false) {
 		$text = date('[Y-m-d H:i:s] ').$text."\r\n";
-		if($exit)
+		if($exit) {
 			die($text);
-		if($this->verboseMode)
+		}
+
+		if($this->verboseMode) {
 			echo $text;
+		}
 	}
 }
 
