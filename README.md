@@ -3,6 +3,11 @@ PHP Push WebSocket
 
 PHP Push WebSocket is an implementation of the WebSocket protocol following the specification of [RFC 6455](https://tools.ietf.org/html/rfc6455). It also includes a client side for examples.
 
+Installation with Composer
+--------------------------
+
+To install the latest stable version: `composer require "srchea/php-push-web-socket"`
+
 Usage
 -----
 
