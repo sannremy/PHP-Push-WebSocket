@@ -3,6 +3,13 @@
     "description": "Lightweight PHP WebSocket server handling several clients.",
     "type": "library",
     "license": "GPLv3",
+    "keywords": [
+        "websocket",
+        "push",
+        "server",
+        "rfc",
+        "6455"
+    ],
     "authors": [
         {
             "name": "Sann-Remy Chea",
