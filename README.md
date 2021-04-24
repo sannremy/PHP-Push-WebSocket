@@ -25,8 +25,6 @@ Examples of use cases
 Bottom line
 ---
 
-Here is a blog post about this implementation: [http://srchea.com/build-a-real-time-application-using-html5-websockets](http://srchea.com/build-a-real-time-application-using-html5-websockets)
-
 Composer/Packagist: [https://packagist.org/packages/srchea/php-push-web-socket](https://packagist.org/packages/srchea/php-push-web-socket)
 
 Feel free to contribute! :-)
