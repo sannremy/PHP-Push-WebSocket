@@ -2,7 +2,7 @@
 
 /**
  * A daemon of PHP Push WebSocket
- * @author Sann-Remy Chea <http://srchea.com>
+ * @author Sann-Remy Chea <http://sannremy.com>
  * @license This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
